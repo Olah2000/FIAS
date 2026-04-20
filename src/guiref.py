@@ -8,8 +8,6 @@ import PIL.ImageTk
 from threading import *
 
 
-
-
 # Simple method for printing version numbers of imported modules for sanity
 # Input: type: module name
 # Output: type: string
@@ -17,12 +15,23 @@ def ver(module):
     version = getattr(module, "__version__", "Unknown")
     print(f"{module.__name__}: {version}")
 
-
 #Print versions of modules
 ver(face_recognition)
 ver(cv2)
 ver(numpy)
 ver(PIL.Image)
+
+
+
+"""
+get_screen_size is a method that serves to get the resolution of the monitr 
+"""
+def get_screen_size():
+    x = root.winfo_screenwidth() // 2
+    y = int(root.winfo_screenheight() * 0.5)
+
+    return root.geometry('800x600+' + str(x) + '+' + str(y))
+
 
 
 """
@@ -34,12 +43,12 @@ Syntax and Parameters: root = Tk(screenName=None, baseName=None, className='Tk',
 -baseName (optional): Sets the base name for the application (default is the script name).
 -className (optional): Defines the name of the window class (used for styling and window manager settings).
 -useTk (optional): A boolean that tells whether to initialize the Tk subsystem (usually left as default 1).
-
-
 """
 root = tk.Tk()
 root.title("FIAS")
 root.eval("tk::PlaceWindow . center")
+
+
 
 """
 Frame widget:
@@ -60,6 +69,8 @@ Syntax and Parameters: w = Frame(master, options)
     -highlighbackground
     highlightthickness
 """
+
+
 
 frame1 = tk.Frame(root, width = 800, height = 600, bg="lightgray")
 frame1.grid(row = 0, column = 0)
