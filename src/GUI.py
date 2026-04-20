@@ -23,7 +23,7 @@ from threading import *
 
 
 # Simple method for printing version numbers of imported modules for sanity
-# Input: type: string
+# Input: type: module name
 # Output: type: string
 def ver(module):
     version = getattr(module, "__version__", "Unknown")
@@ -140,3 +140,4 @@ while True:
 capture.release()
 webcam.destroyAllWindows()
 """
+
