@@ -7,26 +7,10 @@ import PIL.Image
 import PIL.ImageTk
 from threading import *
 
-
-# Simple method for printing version numbers of imported modules for sanity
-# Input: type: module name
-# Output: type: string
-def ver(module):
-    version = getattr(module, "__version__", "Unknown")
-    print(f"{module.__name__}: {version}")
-
-#Print versions of modules
-ver(face_recognition)
-ver(cv2)
-ver(numpy)
-ver(PIL.Image)
-
-
-
 """
 get_screen_size is a method that serves to get the resolution of the monitr 
 """
-def get_screen_size():
+def get_screen_size(root):
     x = root.winfo_screenwidth() // 2
     y = int(root.winfo_screenheight() * 0.5)
 
@@ -70,7 +54,7 @@ Syntax and Parameters: w = Frame(master, options)
     highlightthickness
 """
 
-
+#get_screen_size(root)
 
 frame1 = tk.Frame(root, width = 800, height = 600, bg="lightgray")
 frame1.grid(row = 0, column = 0)
