@@ -7,7 +7,7 @@ if __name__ == "__main__":
 
     FIAS = GUI(root)
 
-    FIASWEBCAM = WebcamFeed(root)
+    FIASWEBCAM = WebcamCapture(root)
 
     FIAS.set_geom()
 
