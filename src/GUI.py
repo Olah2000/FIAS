@@ -35,28 +35,40 @@ class GUI:
     def __init__(self, window, image_path = None):
         self.window = window
         self.image_path = image_path
-        self.canvas = None
-        self.width = window.winfo_screenwidth() // 1.5
-        self.height = window.winfo_screenheight() // 1.5
-
+        self.label = None
+        self.width = window.winfo_screenwidth() // 1.06
+        self.height = window.winfo_screenheight() // 1.06
+        self.webcam = WebcamCapture()
+        self.webcam_label = tk.Label(window)
+        self.webcam_label.pack()
+        self.update_webcam_feed()
 
 
 
     """
-    Method for loading canvas widgets onto main root window
-
-    Parameters:
-        -self:      The instance of the GUI class
-    Returns:
-        -None 
+    Method for updating the webcam feed inside the label widget. Uses 
+    after() method to make sure the GUI isn't inhibited
     """
-    def load_canvas(window):
+    def update_webcam_feed(self):
+
         try:
-            
-            pass
+
+            ret, frame = self.webcam.cap_frame()
+
+            if ret:
+                #Convert frame to PIL Image and Tkinter PhotoImage
+                frame = PIL.Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+                hungFrame = PIL.ImageTk.PhotoImage(frame)
+
+                #Update the labale that capture will be apart of
+                self.webcam_label.config(image = hungFrame)
+                self.webcam_label.frame = hungFrame
+
+                #Buffer next update. First paramater that's an int is ms of buf. 33ms ~ 30 FPS
+                self.window.after(33, self.update_webcam_feed)
 
         except Exception as e:
-            print(f"Error loading canvas: {e}")
+            print(f"Failed to initialize webcam feed. Make sure the webcam is connected and accessible. Error: {e}")
 
 
 
@@ -70,7 +82,13 @@ class GUI:
         -None
     """
     def set_geom(self):
-        self.window.geometry(f"{self.width}x{self.height}")
+
+        try:
+    
+            self.window.geometry(f"{self.width}x{self.height}")
+
+        except Exception as e:
+            print(f"Could not find usable resoultion. Error: {e}")
 
 
 
@@ -78,26 +96,47 @@ class BackgroundImage:
     pass
 
 
+
 """
 Class creation of WebcamCapture. Child of GUI, because the webcam 'widget' will go off
 elements that reside in the GUI parent class. Elements like the root window resoultion.
 """
-class WebcamCapture(GUI):
+class WebcamCapture:
     
     """
     Instance method of creating a WebcamCapture object. Inherits root window from GUI parent class (tk.Tk) and will create instant
     webcam capture
     """
-    def __init__(self, window):
-
-        #Inherit root window from GUI class
-        super().__init__(window)
+    def __init__(self):
         
         #Set dimensions of webcam feed object that come from the root windows (GUI parent class) 
-        self.width = window.winfo_screenwidth() // 2
-        self.height = window.winfo_screenheight() // 2
+        self.width = 640
+        self.height = 480
 
         #Create actual webcam feed with set dimensions ^^^
-        vcap = cv2.VideoCapture(0)      #Grab default camera
-        vcap.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)      
-        vcap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
+        self. vcap = cv2.VideoCapture(0)      #Grab default camera
+        self. vcap.set(cv2.CAP_PROP_FRAME_WIDTH, self.width * 1.2)      
+        self.vcap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height * 1.2)
+
+
+
+    """
+    Method for capturing single frame from webcam object
+
+    Parameters:
+        -self:      The instance of the WebcamCapture class
+    Returns:
+        -frame:     The captured frame from the webcam held as numpy array
+        -ret:       A boolean indicating whether the frame was captured successfully
+    """
+    def cap_frame(self):
+        
+        return self.vcap.read()
+    
+
+
+    """
+    Cleanup method that should be called whenever the webcam capture is no longer needed
+    """
+    def cleanup(self):
+        self.vcap.release()

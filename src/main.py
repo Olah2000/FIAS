@@ -7,10 +7,10 @@ if __name__ == "__main__":
 
     FIAS = GUI(root)
 
-    FIASWEBCAM = WebcamCapture(root)
-
     FIAS.set_geom()
 
     root.mainloop()
+
+    FIAS.webcam.cleanup()
 
     pass
