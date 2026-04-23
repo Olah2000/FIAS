@@ -12,5 +12,3 @@ if __name__ == "__main__":
     root.mainloop()
 
     FIAS.webcam.cleanup()
-
-    pass
