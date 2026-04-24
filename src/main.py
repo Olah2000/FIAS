@@ -3,7 +3,7 @@ from GUI import GUI
 
 if __name__ == "__main__":
 
-    root = tk.Tk()      #Create Tkinter window
+    root = tk.Tk(className = " FIAS")   #Create Tkinter window. Yes, the space there is intentional DON'T TOUCH IT!!! (it makes the 'f' in FIAS lowercase for some reason)
 
     FIAS = GUI(root)    #Initialize the GUI
 

@@ -5,13 +5,11 @@ Josh Rudnick
 """
 
 
-#import face_recognition
 import cv2
-#import numpy
 import tkinter as tk
+from tkinter import messagebox
 import PIL.Image
 import PIL.ImageTk
-#import threading
 
 
 """
@@ -51,7 +49,7 @@ class GUI:
         -image_path:    The path to the background image file to be displayed.
 
     Instance variables:
-        -self.window:   An instance of a tk.Tk() (root in main)   
+        -self.window:   An instance of a tk.Tk() (root in main)
         -self.image_path:   The path to the background image file to be displayed
         -self.bimg:     Background image itself
         -self.background_label:     Tkinter label widget with background to identify it
@@ -60,7 +58,7 @@ class GUI:
         -self.running:  Flag for neat shutdown operations
         -self.webcam:   Composed instance of WebcamCapture class inside GUI class.
     """
-    def __init__(self, window, image_path = "wf/Sebs_Proj.png"):
+    def __init__(self, window, image_path = "wf/wireframe.png"):
         self.window = window
         self.image_path = image_path
         self.bgimg = None
@@ -95,9 +93,6 @@ class GUI:
 
         
         self.set_window_size()  #Organizes everything after initialized in
-
-
-        
 
 
 
@@ -292,10 +287,6 @@ class WebcamCapture:
             return None
         return PIL.Image.fromarray(rgbframe)
     
-
-
-
-
 
 
     def cleanup(self):

@@ -11,10 +11,6 @@ Starter code for User's
 """
 
 #Modules
-import csv
-import face_recognition
-import cv2
-import numpy
 
 
 #Classes
