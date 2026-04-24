@@ -14,6 +14,33 @@ import PIL.ImageTk
 #import threading
 
 
+"""
+Constants here for seating GUI elements nicely 
+"""
+WINDOW_SCALE_FACTOR = 1.6
+WEBCAM_SCALE_FACTOR = 1.2
+WEBCAM_FRAME_DELAY_MS = 33 #This is about 30 fps
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 class GUI:
     """
@@ -21,32 +48,34 @@ class GUI:
 
     Parameters:
         -window:    The main window object
-        -image_path:    The path to the image file to be displayed.
+        -image_path:    The path to the background image file to be displayed.
 
     Instance variables:
         -self.window:   An instance of a tk.Tk() (root in main)   
-        -self.image_path:   The path to the image file to be displayed
-        -self.label:   The tkinter label for displaying the image
+        -self.image_path:   The path to the background image file to be displayed
+        -self.bimg:     Background image itself
+        -self.background_label:     Tkinter label widget with background to identify it
         -self.width:   The width of the application window
         -self.height:   The height of the application window
-
+        -self.running:  Flag for neat shutdown operations
+        -self.webcam:   Composed instance of WebcamCapture class inside GUI class.
     """
-    def __init__(self, window, image_path = "wf/wireframe.png"):
+    def __init__(self, window, image_path = "wf/Sebs_Proj.png"):
         self.window = window
         self.image_path = image_path
-        self.label = None
-        self.width = int(window.winfo_screenwidth() / 1.6)
-        self.height = int(window.winfo_screenheight() / 1.6)
-        self.webcam = WebcamCapture()
-
-        """
-        Uploading background image section.
-
-            -self.bimg:     Background image itself
-            -self.background_label:     Tkinter label with background to identify it
-        """
         self.bgimg = None
         self.background_label = None
+        self.width = int(window.winfo_screenwidth() / WINDOW_SCALE_FACTOR)
+        self.height = int(window.winfo_screenheight() / WINDOW_SCALE_FACTOR)
+        self.running = True
+        self.webcam = WebcamCapture()
+
+
+
+        """
+        Uploading background image section. Composes BackgrounImage in GUI with these lines.
+        bgimg is initialized as a BackgroundImage object w all properties, tkinter label is created, and is placed
+        """
         if image_path:
             self.bgimg = BackgroundImage(image_path, self.width, self.height)
             self.background_label = tk.Label(window, image = self.bgimg.get_photo_image())
@@ -56,78 +85,84 @@ class GUI:
 
         """
         Setting webcam capture in root window. 
-
             -self.webcam_label:     Tkinter label for placing the webcam feed inside the root window
             -self.webcam_label.place:   Method for putting the label at a specific position. (A geometry manager, simple so using it here) 
             -self.update_webcam_feed():     Calling the method to update the webcam feed and feed frames
-
         """
         self.webcam_label = tk.Label(window)
         self.webcam_label.place(relx = 0.5, rely = 0.5, anchor = "center")
-        self.update_webcam_feed()
+
+
+        
+        self.set_window_size()  #Organizes everything after initialized in
+
+
+        
 
 
 
-    """
-    Method for updating the webcam feed inside the label widget. Uses 
-    after() method to make sure the GUI isn't inhibited
-    """
-    def update_webcam_feed(self):
-
+    def set_window_size(self):
+        """
+        This method sets the size of the application to the 1/6th of the users resolution
+        """
         try:
-
-            ret, frame = self.webcam.cap_frame()
-
-            if ret:
-                #Convert frame to PIL Image and Tkinter PhotoImage
-                frame = PIL.Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-                hungFrame = PIL.ImageTk.PhotoImage(frame)
-
-                #Update the labale that capture will be apart of
-                self.webcam_label.config(image = hungFrame)
-                self.webcam_label.frame = hungFrame
-
-                #Buffer next update. First paramater that's an int is ms of buf. 33ms ~ 30 FPS
-                self.window.after(33, self.update_webcam_feed)
-
-        except Exception as e:
-            print(f"Failed to initialize webcam feed. Make sure the webcam is connected and accessible. Error: {e}")
-
-
-
-    """
-    This method sets the size of the application to the max
-    size of the users resoultion
-
-    Parameters:
-        -self       The instance of the GUI class
-    Returns:
-        -None
-    """
-    def set_geom(self):
-
-        try:
-    
             self.window.geometry(f"{self.width}x{self.height}")
-
         except Exception as e:
-            print(f"Could not find usable resoultion. Error: {e}")
+            raise RuntimeError(f"Could not find usable resolution. Error: {e}")
 
 
 
+    def update_webcam_feed(self):
+        """
+        Method for updating the webcam making an actual feed.
+        """
+        if not self.running:
+            return
+        frame = self.webcam.get_frame_image()
+        if frame is not None:
+            photo = PIL.ImageTk.PhotoImage(frame)
+            self.webcam_label.config(image = photo)
+            self.webcam_label.image = photo
+        self.window.after(WEBCAM_FRAME_DELAY_MS, self.update_webcam_feed)
 
-
-
-
-
-
-
-"""
-Class creation of BackgroundImage. Responsible for not only acting as the wireframe for the GUI,
-but also is a tkinter Frame widget, so all other main widgets will be attacted to it. (e.g. labels, buttons and webcam capture)
-"""
-class BackgroundImage:
     
+
+    def stop_feed(self):
+        """
+        Flag raiser to stop feed instnatly when user closes application
+        """
+        self.running = False
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class BackgroundImage:
     """
     Instance method of creating BackgroundImage objects. This object is COMPOSED (Not inherited.
     two different things. Better. Establishes more of a 'has-a' relationship whereas inheritance creates a 'is-a' relationship
@@ -135,9 +170,10 @@ class BackgroundImage:
     im rambling. Just initialize the fucking object)
     
     Parameters:
-        -image_path:    The path to the background image
-        -width:     The width of the background image
-        -height:    The height of the background image
+        -self.image_path:    The path to the background image
+        -self.width:     The width of the background image
+        -self.height:    The height of the background image
+        -self.bgimg:    
     """
     def __init__(self, image_path, width, height):
         self.image_path = image_path
@@ -147,27 +183,30 @@ class BackgroundImage:
 
 
 
-        #Error handling in case image loading goes wry
+        #Error handling in case image loading goes awry
         try:
-            self.find_image_path()
+            self.validate_image_path()
             self.load_image()
         except Exception as e:
             print(f"Failed to initialize background image. Error: {e}")
 
 
 
-    def find_image_path(self):
+    def validate_image_path(self):
         """
-        Valides that the image file actually exists
+        Valides that the image file actually exists. Lazy imports os to save startup performance
         """
         import os
         if not os.path.exists(self.image_path):
-            print(f"Image file not found: {self.image_path}")
+            raise FileNotFoundError(f"Image file not found: {self.image_path}")
 
 
 
     def load_image(self):
-
+        """
+        Method for opening image with Pillow, resizing, then making it PILTk and initalization variable.
+        'image' is a local variable to hold the PIL Image object, and then becomes 'self.bgimg' and turned into tkinter widget
+        """
         image = PIL.Image.open(self.image_path)
         image = image.resize((int(self.width), int(self.height)))
         self.bgimg = PIL.ImageTk.PhotoImage(image)
@@ -175,7 +214,27 @@ class BackgroundImage:
 
 
     def get_photo_image(self):
+        """
+        Helper function to retrieve the background image of the GUI
+        """
         return self.bgimg
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -191,37 +250,57 @@ class WebcamCapture:
     """
     Instance method of creating a WebcamCapture object. COMPOSED in root window from GUI class (tk.Tk) and will create instant
     webcam capture
+
+    Initialization variables:
+        -self.width:    width of webcam feed object
+         -self.height:   height of webcam feed object
+         -self.vcap:     Instance of webcam feed object
     """
     def __init__(self):
-        
-        #Set dimensions of webcam feed object that come from the root windows (GUI parent class) 
         self.width = 640
         self.height = 480
 
         #Create actual webcam feed with set dimensions ^^^
-        self. vcap = cv2.VideoCapture(0)      #Grab default camera
-        self. vcap.set(cv2.CAP_PROP_FRAME_WIDTH, self.width * 1.2)      
-        self.vcap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height * 1.2)
+        self.vcap = cv2.VideoCapture(0, cv2.CAP_DSHOW)      #Grab default camera
+        self.vcap.set(cv2.CAP_PROP_FRAME_WIDTH, int(self.width / WEBCAM_SCALE_FACTOR))      
+        self.vcap.set(cv2.CAP_PROP_FRAME_HEIGHT, int(self.height / WEBCAM_SCALE_FACTOR))
 
 
 
-    """
-    Method for capturing single frame from webcam object
+    def get_frame_rgb(self):
+        """
+        Method for capturing single frame from webcam object. This is the raw frame that will be used for the facial_recognition module
+        because methods in that module expect a numpy array only, whereas PIL.Images are separate
 
-    Parameters:
-        -self:      The instance of the WebcamCapture class
-    Returns:
-        -frame:     The captured frame from the webcam held as numpy array
-        -ret:       A boolean indicating whether the frame was captured successfully
-    """
-    def cap_frame(self):
-        
-        return self.vcap.read()
+        Returns:
+            -frame:     The captured frame from the webcam held as numpy array
+        """        
+        _, frame = self.vcap.read()
+        if frame is None:
+            return None
+        return cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     
 
 
-    """
-    Cleanup method that should be called whenever the webcam capture is no longer needed
-    """
+    def get_frame_image(self):
+        """
+        Method for converting the captured frame to a PIL Image. This is used for the GUI only and can't be used for any
+        kind of data processing
+        """
+        rgbframe = self.get_frame_rgb()
+        if rgbframe is None:
+            return None
+        return PIL.Image.fromarray(rgbframe)
+    
+
+
+
+
+
+
     def cleanup(self):
-        self.vcap.release()
+        """
+        Cleanup method that should be called whenever the webcam capture is no longer needed
+        """
+        if self.vcap.isOpened():
+            self.vcap.release()

@@ -1,7 +1,4 @@
 Next Steps
-Implement load_canvas as an instance method to create a tkinter Canvas or Label for displaying content.
 Add a method in WebcamCapture to continuously capture frames, convert to PIL.ImageTk.PhotoImage, and update the GUI widget (use threading to run in background).
-Flesh out BackgroundImage to load and display a static image (e.g., via PIL) on the canvas.
-Integrate everything: Perhaps have the GUI load a background, and overlay/embed the webcam feed.
 Add controls (e.g., buttons for start/stop) and handle window resizing.
 Test on Linux (your environment)—ensure cv2 can access the webcam without permissions issues.
