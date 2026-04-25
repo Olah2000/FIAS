@@ -10,6 +10,8 @@ import tkinter as tk
 from tkinter import messagebox
 import PIL.Image
 import PIL.ImageTk
+import PIL.ImageDraw
+import PIL.ImageFont
 
 
 """
@@ -80,6 +82,9 @@ class GUI:
             self.background_label.place(x = 0, y = 0, relheight = 1, relwidth = 1)
 
 
+            
+
+
 
         """
         Setting webcam capture in root window. 
@@ -89,6 +94,11 @@ class GUI:
         """
         self.webcam_label = tk.Label(window)
         self.webcam_label.place(relx = 0.5, rely = 0.5, anchor = "center")
+
+
+
+        self.status_label = tk.Label(window, text = "No face detected", font = ("JetBrains Mono", 12), bg = "white", fg = "black")
+        self.status_label.place(relx = 0.5, rely = 0.9, anchor = "center")
 
 
         
@@ -107,18 +117,50 @@ class GUI:
 
 
 
-    def update_webcam_feed(self):
+
+    def display_overlays(self, results):
         """
-        Method for updating the webcam making an actual feed.
+        Method for creating the display for the facial_recognition elements that will
+        signal users if faces match, don', etc. 
         """
-        if not self.running:
-            return
         frame = self.webcam.get_frame_image()
-        if frame is not None:
-            photo = PIL.ImageTk.PhotoImage(frame)
-            self.webcam_label.config(image = photo)
-            self.webcam_label.image = photo
-        self.window.after(WEBCAM_FRAME_DELAY_MS, self.update_webcam_feed)
+        if frame is None:
+            return
+        
+        draw = PIL.ImageDraw.Draw(frame)
+
+        for result in results:
+            top, right, bottom, left = result["location"]
+            name = result["name"]
+            confidence = result["confidence"]
+
+            if name == "Unknown Student":
+                color = "red"
+            else:
+                color = "green"
+
+            draw.rectangle([left, top, right, bottom], outline = color, width = 2)
+            draw.text((left, top), f"{name}: {confidence:.2f}", fill = "black")
+
+        photo = PIL.ImageTk.PhotoImage(frame)
+        self.webcam_label.config(image = photo)
+        self.webcam_label.image = photo
+
+
+
+    def display_status(self, results):
+        """
+        Method that actually handles the status label based on recognition results
+        """
+        if not results:
+            message = "No face detected"
+        elif any(r["name"] == "Unknown Student" for r in results):
+            message = "Unknown student detected"
+        else:
+            names = [r["name"] for r in results]
+            message = f"Recognized: {', '.join(names)}"
+
+        self.status_label.config(text = message)
 
     
 
