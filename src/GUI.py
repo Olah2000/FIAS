@@ -6,6 +6,8 @@ Josh Rudnick
 
 
 import cv2
+import queue
+import threading
 import tkinter as tk
 from tkinter import messagebox
 import PIL.Image
@@ -17,9 +19,9 @@ import PIL.ImageFont
 """
 Constants here for seating GUI elements nicely 
 """
-WINDOW_SCALE_FACTOR = 1.6
+WINDOW_SCALE_FACTOR = 1.4
 WEBCAM_SCALE_FACTOR = 1.2
-WEBCAM_FRAME_DELAY_MS = 33 #This is about 30 fps
+WEBCAM_FRAME_DELAY_MS = 14
 
 
 
@@ -54,17 +56,30 @@ class GUI:
         -self.window:   An instance of a tk.Tk() (root in main)
         -self.image_path:   The path to the background image file to be displayed
         -self.bimg:     Background image itself
+
+
+
+
+        -self.menu:     Menu widget to create menu bars
+
         -self.background_label:     Tkinter label widget with background to identify it
         -self.width:   The width of the application window
         -self.height:   The height of the application window
         -self.running:  Flag for neat shutdown operations
         -self.webcam:   Composed instance of WebcamCapture class inside GUI class.
     """
-    def __init__(self, window, image_path = "wf/wireframe.png"):
+    def __init__(self, window, image_path = "wf/FIASLAYOUT.png"):
         self.window = window
         self.image_path = image_path
+        self.canvas = None
         self.bgimg = None
+        self.button_export = None
+        self.button_captureStudent = None
+        self.button_viewClasses = None
+        self.listbox = None
         self.background_label = None
+        self.menu = None
+        self.create_menu()
         self.width = int(window.winfo_screenwidth() / WINDOW_SCALE_FACTOR)
         self.height = int(window.winfo_screenheight() / WINDOW_SCALE_FACTOR)
         self.running = True
@@ -73,6 +88,9 @@ class GUI:
 
 
         """
+        ALL STATIC COMPONENTS TO GUI INITIALIZED HERE WITHOUT METHODS.
+
+
         Uploading background image section. Composes BackgrounImage in GUI with these lines.
         bgimg is initialized as a BackgroundImage object w all properties, tkinter label is created, and is placed
         """
@@ -82,10 +100,7 @@ class GUI:
             self.background_label.place(x = 0, y = 0, relheight = 1, relwidth = 1)
 
 
-            
-
-
-
+        
         """
         Setting webcam capture in root window. 
             -self.webcam_label:     Tkinter label for placing the webcam feed inside the root window
@@ -95,14 +110,40 @@ class GUI:
         self.webcam_label = tk.Label(window)
         self.webcam_label.place(relx = 0.5, rely = 0.5, anchor = "center")
 
-
-
-        self.status_label = tk.Label(window, text = "No face detected", font = ("JetBrains Mono", 12), bg = "white", fg = "black")
+        self.status_label = tk.Label(window, text = "No face detected", font = ("JetBrains Mono", 20), bg = "#000615", fg = "white")
         self.status_label.place(relx = 0.5, rely = 0.9, anchor = "center")
 
 
+
+        """
+        List box initialization for student's marked present by face scan
+        """
+        self.listbox = tk.Listbox(window, bg = "#252830", fg = "white", font = ("JetBrains Mono", 13), borderwidth = 0, highlightthickness = 0)
+        self.listbox.insert(1, "Example")
+        self.listbox.insert(2, "Example")
+        self.listbox.insert(3, "Example")
+        self.listbox.insert(4, "Example")
+        self.listbox.place(relx = 0.1154, rely = 0.4, anchor = "center")
+
+
         
+        """
+        Button widget initialization for tools that teach can use
+        """
+        self.button_export = tk.Button(window, text = "Export", width = 15, height = 2, bg = "#252830", fg = "white", font = ("JetBrains Mono", 13))
+        self.button_captureStudent = tk.Button(window, text = "Add Student", width = 15, height = 2, bg = "#252830", fg = "white", font = ("JetBrains Mono", 13))
+        self.button_viewClasses = tk.Button(window, text = "View Classes", width = 15, height = 2, bg = "#252830", fg = "white", font = ("JetBrains Mono", 13))
+        
+        self.button_export.place(relx = 0.8845, rely = 0.3, anchor = "center")
+        self.button_captureStudent.place(relx = 0.8845, rely = 0.4, anchor = "center")
+        self.button_viewClasses.place(relx = 0.8845, rely = 0.5, anchor = "center")
+
+
+
+
         self.set_window_size()  #Organizes everything after initialized in
+
+#~~~~~~~~~~~~~~~~~~~END GUI INIT~~~~~~~~~~~~~~~~~~~~~#
 
 
 
@@ -115,19 +156,33 @@ class GUI:
         except Exception as e:
             raise RuntimeError(f"Could not find usable resolution. Error: {e}")
         
+      
+      
+    def create_menu(self):
+        """
+        Method for creating a menu bar for added user experience functionality
+        Has to be intialized upon GUI creation because it is static, and because of how stupid tkinter is.
+        """
+        menu = tk.Menu(self.window, activebackground = "#252627")
+        filemenu = tk.Menu(menu, tearoff = 0, activebackground = "#1f2430")
+        menu.add_cascade(label = "File", menu = filemenu)
+        filemenu.add_command(label = "New", command = None)
+        filemenu.add_command(label = "Open...", command = None)
+        filemenu.add_separator()
+        filemenu.add_command(label = "Exit", command = self.window.quit)
+        self.window.config(menu = menu)
+        self.menu = menu
+            
 
+
+  
     def start_webcam(self):
         self.webcam = WebcamCapture()
 
 
 
+    def display_overlays(self, results, frame):  # frame passed in, not re-read
 
-    def display_overlays(self, results):
-        """
-        Method for creating the display for the facial_recognition elements that will
-        signal users if faces match, don', etc. 
-        """
-        frame = self.webcam.get_frame_image()
         if frame is None:
             return
         
@@ -204,6 +259,7 @@ class GUI:
 
 
 class BackgroundImage:
+
     """
     Instance method of creating BackgroundImage objects. This object is COMPOSED (Not inherited.
     two different things. Better. Establishes more of a 'has-a' relationship whereas inheritance creates a 'is-a' relationship
@@ -300,27 +356,45 @@ class WebcamCapture:
     def __init__(self):
         self.width = 640
         self.height = 480
+        self.frame_queue = queue.Queue(maxsize = 1)
+
+        self.vcap = cv2.VideoCapture(0, cv2.CAP_DSHOW)      #Grab default camera
+
 
         #Create actual webcam feed with set dimensions ^^^
-        self.vcap = cv2.VideoCapture(0, cv2.CAP_DSHOW)      #Grab default camera
         self.vcap.set(cv2.CAP_PROP_FRAME_WIDTH, int(self.width / WEBCAM_SCALE_FACTOR))      
         self.vcap.set(cv2.CAP_PROP_FRAME_HEIGHT, int(self.height / WEBCAM_SCALE_FACTOR))
+
+        self.thread = threading.Thread(target = self._capture_loop, daemon = True)
+        self.thread.start()
+
+
+    def _capture_loop(self):
+        """Runs on its own thread. Never blocks the GUI."""
+        while True:
+            ret, frame = self.vcap.read()
+            if not ret:
+                continue
+            rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+            # Drain the queue first so we always have the freshest frame
+            if not self.frame_queue.empty():
+                try:
+                    self.frame_queue.get_nowait()
+                except:
+                    pass
+            self.frame_queue.put_nowait(rgb)
+
 
 
 
     def get_frame_rgb(self):
-        """
-        Method for capturing single frame from webcam object. This is the raw frame that will be used for the facial_recognition module
-        because methods in that module expect a numpy array only, whereas PIL.Images are separate
-
-        Returns:
-            -frame:     The captured frame from the webcam held as numpy array
-        """        
-        _, frame = self.vcap.read()
-        if frame is None:
+        """Non-blocking. Returns None if no frame is ready yet."""
+        try:
+            return self.frame_queue.get_nowait()
+        except queue.Empty:
             return None
-        return cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    
+
 
 
     def get_frame_image(self):

@@ -76,6 +76,8 @@ def _recognition_worker(faces_folder, frame_queue, result_queue, stop_event):
             distances = face_recognition.face_distance(known_encodings, unknown_encoding)       #Compare faces against learned faces in folder to face present on camera. Returns a list of tuples of face locations
             best_match_index = np.argmin(distances)     #Find the minimum distance. Right now, the lower confidence is better before readable adjustements bellow
 
+
+
             if distances[best_match_index] < RECOG_THRESHOLD:       
                 name = known_names[best_match_index]
                 confidence = round(1 - distances[best_match_index], 2)
@@ -145,6 +147,7 @@ class FRC:
         self.known_names = []
         self.shared_results = []
         self.faces_folder = faces_folder
+        self.validate_folder_path()
         self.frame_queue = multiprocessing.Queue(maxsize = 1)
         self.result_queue = multiprocessing.Queue(maxsize = 1)
         self.stop_event = multiprocessing.Event()
