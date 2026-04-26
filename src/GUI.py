@@ -68,7 +68,7 @@ class GUI:
         self.width = int(window.winfo_screenwidth() / WINDOW_SCALE_FACTOR)
         self.height = int(window.winfo_screenheight() / WINDOW_SCALE_FACTOR)
         self.running = True
-        self.webcam = WebcamCapture()
+        self.webcam = None
 
 
 
@@ -114,6 +114,10 @@ class GUI:
             self.window.geometry(f"{self.width}x{self.height}")
         except Exception as e:
             raise RuntimeError(f"Could not find usable resolution. Error: {e}")
+        
+
+    def start_webcam(self):
+        self.webcam = WebcamCapture()
 
 
 

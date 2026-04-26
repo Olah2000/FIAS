@@ -1,10 +1,77 @@
-
-
-import face_recognition
 import numpy as np
-import threading
-from GUI import WebcamCapture
+import multiprocessing
 import os
+    
+RECOG_THRESHOLD = 0.6
+VALID_EXTENSIONS = (".png", ".jpg", ".jpeg")
+
+
+
+def _recognition_worker(faces_folder, frame_queue, result_queue, stop_event):
+    """
+    MAIN METHOD FOR PROCESSING FACE DATA AND COMPARING. This is declared module wide because mutliprocess needs to access this inside
+    the class. Btw the leading _ apparenetly signals the Python interpreter to not import this in another class when victim of 'from module import *'
+    Anyway, this worker:
+        -Establishes a picture's encodings, and name to the face
+        -Verify's directory fcs that stores the raw VALID_EXTENSIONS' pictures.
+        - Iterates over each file, stores data from them
+        -Checks if there IS a face in the encoding (comapring to length 1) then appends the encoding and name of the person (File name MUST be first and last name of person) to list
+
+    Parameters:
+        -faces_folder:      Relative path (of project folder) to directory of face images
+    """
+    import face_recognition
+
+    known_encodings = []
+    known_names = []
+
+    for filename in os.listdir(faces_folder):
+        if filename.lower().endswith(VALID_EXTENSIONS):
+            full_path = os.path.join(faces_folder, filename)
+            img = face_recognition.load_image_file(full_path)
+            encodings = face_recognition.face_encodings(img)
+            if len(encodings) == 1:
+                known_encodings.append(encodings[0])
+                known_names.append(os.path.splitext(filename)[0])
+
+    # Recognition loop
+    while not stop_event.is_set():
+        try:
+            frame = frame_queue.get(timeout=0.1)
+        except:
+            continue
+
+        if not known_encodings:
+            result_queue.put([])
+            continue
+
+        face_locations = face_recognition.face_locations(frame)
+        if not face_locations:
+            result_queue.put([])
+            continue
+
+        face_encodings = face_recognition.face_encodings(frame, face_locations)
+        results = []
+
+        for i, unknown_encoding in enumerate(face_encodings):
+            distances = face_recognition.face_distance(known_encodings, unknown_encoding)
+            best_match_index = np.argmin(distances)
+
+            if distances[best_match_index] < RECOG_THRESHOLD:
+                name = known_names[best_match_index]
+                confidence = round(1 - distances[best_match_index], 2)
+            else:
+                name = "Unknown Student"
+                confidence = 0.0
+
+            results.append({
+                "name": name,
+                "confidence": confidence,
+                "location": face_locations[i]
+            })
+
+        result_queue.put(results)
+
 
 RECOG_THRESHOLD = 0.6       #Based on the module, it says that this is the prefered value for letting a face be considered similar
 
@@ -24,13 +91,14 @@ class FRC:
     def __init__(self, faces_folder = "fcs/"):
         self.known_encodings = []
         self.known_names = []
-        self.shared_frame = None
-        self.thread = None
         self.shared_results = []
-        self.lock = threading.Lock()
-        self.stop_event = threading.Event()
         self.faces_folder = faces_folder
-        self.load_known_faces()
+        self.frame_queue = multiprocessing.Queue(maxsize = 1)
+        self.result_queue = multiprocessing.Queue(maxsize = 1)
+        self.stop_event = multiprocessing.Event()
+        self.process = None
+        self.last_results = []
+        
 
 
 
@@ -43,111 +111,42 @@ class FRC:
         
 
 
-    def load_known_faces(self):
-        """
-        Method that handles loading known faces from fcs folder, storing their encodings, and storing their name
-        os.listdir allows us to iterate through all files in the folder by passing in directory to faces folder. Then second part of loop starts.
-        Second part checks image file if no face, or many faces. If there's only one, then store the face encoding and name.
-        """
-        self.validate_folder_path()
-    
-        for filename in os.listdir(self.faces_folder):     
-            if filename.lower().endswith(".png") or filename.lower().endswith(".jpg") or filename.lower().endswith(".jpeg"):
-                full_path = os.path.join(self.faces_folder, filename)
-                
-                current_img = face_recognition.load_image_file(full_path)       #Load the image file
-
-
-                current_encoding = face_recognition.face_encodings(current_img)
-
-                if len(current_encoding) == 0:
-                    print(f"No face found in image: {filename}, Please check image to ensure a face is present")
-                    continue
-
-                if len(current_encoding) > 1:
-                    print(f"Multiple faces found in image: {filename}, Please ensure only one face is present in the image")
-                    continue
-                self.known_encodings.append(current_encoding[0])        #Add the current image's encoding into known encodings
-                self.known_names.append(os.path.splitext(filename)[0])      #Add the current image's name into known names
+    def update_frame(self, rgb_frame):
+        if not self.frame_queue.empty():
+            try:
+                self.frame_queue.get_nowait()
+            except:
+                pass
+        try:
+                self.frame_queue.put_nowait(rgb_frame)
+        except:
+            pass
 
 
 
-    def process_frame(self, rgb_frame):
-        """
-        Method that does the face rec processes. Broken into different activites handled my the face_recognition module.
-
-        Methods from face_recognition module:
-            -face_locations(frame):     Takes in the Numpy RGB frame (method specifically created in GUI class) and returns coords of face
-            -face_encodings(frame, locations):      Takes the frame and locations and returns NumpyArray
-            -compare_faces(known_face_encodings, unknown_face_encodings):       Returns a list of True/False values indicating which faces match. Uses a threshold internally 
-            -face_distance(known_face_encodings, unknown_face_encodings):       Similar to ^ but returns a float distance other than True/False. Lower = more similar.       
-        """
-        if not self.known_encodings:
-            return []
-        
-
-
-        """
-        Locate faces in the frame. Store the face encoding then check
-        """
-        face_locations = face_recognition.face_locations(rgb_frame)
-        if not face_locations:
-            return []
-        
-
-
-        """
-        Encode faces
-        """
-        face_encodings = face_recognition.face_encodings(rgb_frame, face_locations)
-        results = []
-
-        for i, unknown_encoding in enumerate(face_encodings):
-            distances = face_recognition.face_distance(self.known_encodings, unknown_encoding)
-            best_match_index = np.argmin(distances)
-
-            if distances[best_match_index] < RECOG_THRESHOLD:
-                name = self.known_names[best_match_index]
-                confidence = round(1 - distances[best_match_index], 2)
-            else:
-                name = "Unknown Student"
-                confidence = 0
-
-            results.append({"name": name, "confidence": confidence, "location": face_locations[i]})
-
-  
-
-        self.last_results = results
+    def get_results(self):
+        try:
+            self.last_results = self.result_queue.get_nowait()
+        except:
+            pass
         return self.last_results
     
 
-    def update_frame(self, rgb_frame):
-        with self.lock:
-            self.shared_frame = rgb_frame
-
-
-    
-    def get_results(self):
-        with self.lock:
-            return self.shared_results
-        
-
-    def _recognition_loop(self):
-        while not self.stop_event.is_set():
-            with self.lock:
-                frame = self.shared_frame
-
-            if frame is not None:
-                results = self.process_frame(frame)
-                with self.lock:
-                    self.shared_results = results
-
-
     def start(self):
-        self.thread = threading.Thread(target = self._recognition_loop, daemon = True)
-        self.thread.start()
+        self.process = multiprocessing.Process(target = _recognition_worker, args = (self.faces_folder, self.frame_queue, self.result_queue, self.stop_event), daemon = True)
+        self.process.start()
 
 
     def stop(self):
         self.stop_event.set()
-        self.thread.join(timeout = 2)
+        self.process.join(timeout = 2)
+
+
+
+      
+
+
+
+    
+
+

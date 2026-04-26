@@ -39,7 +39,7 @@ class Student(Course):
         self.last_picture = last_picture
         Course.__init__(self, name=None, class_id=None, class_name=None, assigned_teacher=None, days=None, time=None)
 
-        attendance_days =   [
+        self.attendance_days =   [
             
                 {
 
@@ -47,10 +47,6 @@ class Student(Course):
                             
                             ]
         
-        
-        def sent_attendance_request():
-            pass
-
 
 
 class Teacher:
