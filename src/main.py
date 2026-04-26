@@ -8,8 +8,8 @@ from frcontroller import FRC
 
 if __name__ == "__main__":
 
-    #
-    multiprocessing.freeze_support()
+    
+    multiprocessing.freeze_support()        #Essential call for using multiprocess and explicity documented to be called after __name == "__main__"
 
     root = tk.Tk(className = " FIAS")   #Create Tkinter window. Yes, the space there is intentional DON'T TOUCH IT!!! (it makes the 'f' in FIAS lowercase for some reason)
 
@@ -22,16 +22,19 @@ if __name__ == "__main__":
         Method for refreshing the internal face recognition processes. Interestingly, it calls itself recursively at the end.
         Making sure that each frame is checked,
         """
-        rgb_frame = FIAS.webcam.get_frame_rgb()
+        rgb_frame = FIAS.webcam.get_frame_rgb()     #Get rbg_frame and check to make sure the capture was valid
         if rgb_frame is not None:
             
-            controller.update_frame(rgb_frame)
-            results = controller.get_results()
+            controller.update_frame(rgb_frame)      #Face rec controller gets rbg_frame which ignites frame queue activites
+            results = controller.get_results()      #Grab results from queue
             FIAS.display_overlays(results)
             FIAS.display_status(results)
-        root.after(WEBCAM_FRAME_DELAY_MS, update_fs_loop)
+        root.after(WEBCAM_FRAME_DELAY_MS, update_fs_loop)       #After 33ms repeat
 
-    root.after(10, FIAS.start_webcam)
+    """
+    Help to application to start 493009458 hours after you run it
+    """
+    root.after(10, FIAS.start_webcam)       
     root.after(100, update_fs_loop)
 
 
