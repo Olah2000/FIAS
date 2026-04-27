@@ -1,0 +1,8 @@
+2026-04-26 22:24:15 | INFO  | SESSION          | Application started
+2026-04-26 23:15:32 | INFO  | SESSION          | Application started
+2026-04-26 23:17:14 | INFO  | SESSION          | Application started
+2026-04-26 23:17:22 | INFO  | LOGIN            | email='' outcome=SUCCESS
+2026-04-26 23:17:25 | INFO  | FACE_DETECTED    | name='Sebastian Olah' confidence=0.57 status=Present
+2026-04-26 23:17:49 | INFO  | MANUAL_OVERRIDE  | teacher='Unknown Teacher' student='Sebastian Olah' new_status='Present'
+2026-04-26 23:18:03 | INFO  | SESSION          | Application closed cleanly
+2026-04-26 23:20:39 | INFO  | SESSION          | Application started
