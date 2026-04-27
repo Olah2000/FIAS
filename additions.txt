@@ -1,4 +1,0 @@
-Next Steps
-Add a method in WebcamCapture to continuously capture frames, convert to PIL.ImageTk.PhotoImage, and update the GUI widget (use threading to run in background).
-Add controls (e.g., buttons for start/stop) and handle window resizing.
-Test on Linux (your environment)—ensure cv2 can access the webcam without permissions issues.
