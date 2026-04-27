@@ -22,7 +22,7 @@ import tkinter as tk
 from tkinter import messagebox
 import numpy as np
 from GUI import GUI, WEBCAM_FRAME_DELAY_MS
-from GUI import LoginWindow, AddStudentWindow, ManualAttendanceWindow
+from GUI import LoginWindow, AddStudentWindow, ManualAttendanceWindow, StudentDashboardWindow
 from frcontroller import FRC
 from Data import AttendanceSession, Course
 from UMAuth import User, Administrator
@@ -89,7 +89,21 @@ if __name__ == "__main__":
         "teacher@school.edu": User(name = "Demo Teacher", email = "teacher@school.edu", pwd   = "password123"),           # swap for a secure credential
         "admin@school.edu": Administrator(name = "Demo Admin", email = "admin@school.edu", pwd   = "adminpass"),
         "tding@dtcc.edu": User(name = "Ken Ding", email = "tding@dtcc.edu", pwd = "123"),
+        "student@school.edu": User(name="Demo Student", email="student@school.edu", pwd="student123"),
     }
+
+    # Load saved student accounts from file
+    try:
+        with open("student_accounts.txt", "r", encoding="utf-8") as file:
+            for line in file:
+                full_name, email, password = line.strip().split("|")
+                user_store[email.lower()] = User(
+                    name=full_name,
+                    email=email.lower(),
+                    pwd=password
+                )
+    except FileNotFoundError:
+        pass
  
     """
     Authenticated teacher name
@@ -101,28 +115,22 @@ if __name__ == "__main__":
     current_user = [None]   # current_user[0] will hold the User object
  
 
- 
-    def on_login_success():
+
+    def on_login_success(email):
         """
         Called by LoginWindow immediately before it destroys itself.
- 
-        Starts the webcam (delayed slightly so the window renders first),
-        then starts the recognition loop.  Audit-logs the successful login.
+        Starts the correct window depending on user type.
         """
-        email = _pending_email[0]
         current_user[0] = user_store.get(email.lower())
         audit.log_login(email, success=True)
-        root.after(10,  FIAS.start_webcam)
-        root.after(100, update_fs_loop)
- 
-    _pending_email = [""]           #Temporary holder so the closure above can read the email that was used.
 
- 
+        teacher_accounts = ["teacher@school.edu", "admin@school.edu", "tding@dtcc.edu"]
 
-
-    def _patched_attempt(email: str):
-        """Stores the email before forwarding to the real login callback."""
-        _pending_email[0] = email
+        if email.lower() not in teacher_accounts:
+            StudentDashboardWindow(root, current_user[0])
+        else:
+            root.after(10, FIAS.start_webcam)
+            root.after(100, update_fs_loop)
  
 
     """
@@ -241,15 +249,26 @@ if __name__ == "__main__":
 
 
 
-        def on_student_added(student_name: str):
+        def on_student_added(student_name: str, email: str, password: str):
+            user_store[email.lower()] = User(name=student_name, email=email.lower(), pwd=password)
             audit.log_student_enrolled(user_email, student_name)
+
+
+
+        AddStudentWindow(root, FIAS.webcam, controller, on_student_account_created=on_student_added)
  
+    def handle_logout():
+        current_user[0] = None
 
+        FIAS.stop_feed()
 
+        if FIAS.webcam is not None:
+            FIAS.webcam.cleanup()
+            FIAS.webcam = None
 
-        AddStudentWindow(root, FIAS.webcam, controller)
- 
+        messagebox.showinfo("Logged Out", "You have been logged out.")
 
+        LoginWindow(root, user_store, on_success=on_login_success)
 
     def handle_manual_attendance():
         """
@@ -288,7 +307,7 @@ if __name__ == "__main__":
     FIAS.button_export.config(command=handle_export)
     FIAS.button_captureStudent.config(command=handle_add_student)
     FIAS.button_manualAttendance.config(command=handle_manual_attendance)
-
+    FIAS.button_logout.config(command=handle_logout)
 
 
     def on_app_close():

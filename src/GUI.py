@@ -57,7 +57,7 @@ class LoginWindow:
  
         #Build Toplevel 
         self.win = tk.Toplevel(parent)
-        self.win.title("FIAS — Teacher Login")
+        self.win.title("FIAS — Login Portal")
         self.win.resizable(False, False)
         self.win.configure(bg = "#000615")
  
@@ -75,6 +75,19 @@ class LoginWindow:
         tk.Label(self.win, text = "FIAS", font = ("JetBrains Mono", 28, "bold"), bg = "#000615", fg = "white").grid(row = 0, column = 0, columnspan = 2, pady =(30, 4))
         tk.Label(self.win, text = "[Facial Identification Attendance System]", font = ("JetBrains Mono", 10), bg = "#000615", fg = "#888888").grid(row = 1, column = 0, columnspan = 2, pady = (0, 20))
  
+        tk.Label(self.win, text="Login As", font=("JetBrains Mono", 12), bg="#000615", fg="white").grid(row=2, column=0, sticky="e", **pad)
+
+        self._role_var = tk.StringVar(value="Student")
+        role_box = ttk.Combobox(
+            self.win,
+            textvariable=self._role_var,
+            values=["Student", "Teacher/Admin"],
+            state="readonly",
+            width=26,
+            font=("JetBrains Mono", 11)
+        )
+        role_box.grid(row=2, column=1, **pad)
+
         # Email field
         tk.Label(self.win, text = "Email", font = ("JetBrains Mono", 12), bg = "#000615", fg = "white").grid(row = 2, column = 0, sticky = "e", **pad)
 
@@ -97,6 +110,7 @@ class LoginWindow:
         login_btn = tk.Button(self.win, text="Log In", width=20, height=2, bg="#252830", fg="white", font=("JetBrains Mono", 12), activebackground="#3a3d47", relief="flat", command=self._attempt_login)
         login_btn.grid(row=5, column=0, columnspan=2, pady=(12, 30))
         self.win.bind("<Return>", lambda _e: self._attempt_login())
+
  
         # Center the dialog over the parent window.
         self.win.update_idletasks()
@@ -136,8 +150,9 @@ class LoginWindow:
         # Success path.
         self.authenticated = True
         if self.on_success:
-            self.on_success()
+            self.on_success(email)
         self.win.destroy()
+
  
     def _show_error(self, message: str):
         """Displays an inline error message below the password field."""
@@ -150,6 +165,149 @@ class LoginWindow:
 
 
 
+class StudentDashboardWindow:
+    """
+    Student dashboard window.
+    Allows students to view attendance records and submit attendance correction requests.
+    """
+
+    def __init__(self, parent, student_user):
+        self.parent = parent
+        self.student_user = student_user
+
+        self.win = tk.Toplevel(parent)
+        self.win.title("FIAS — Student Dashboard")
+        self.win.resizable(False, False)
+        self.win.configure(bg="#000615")
+        self.win.grab_set()
+
+        tk.Label(
+            self.win,
+            text="Student Dashboard",
+            font=("JetBrains Mono", 22, "bold"),
+            bg="#000615",
+            fg="white"
+        ).grid(row=0, column=0, columnspan=2, pady=(25, 10))
+
+        tk.Label(
+            self.win,
+            text=f"Welcome, {student_user.name}",
+            font=("JetBrains Mono", 13),
+            bg="#000615",
+            fg="#cccccc"
+        ).grid(row=1, column=0, columnspan=2, pady=(0, 20))
+
+        tk.Label(
+            self.win,
+            text="Attendance Records",
+            font=("JetBrains Mono", 14, "bold"),
+            bg="#000615",
+            fg="white"
+        ).grid(row=2, column=0, columnspan=2, pady=(5, 5))
+
+        self.records_box = tk.Listbox(
+            self.win,
+            width=50,
+            height=8,
+            bg="#252830",
+            fg="white",
+            font=("JetBrains Mono", 11),
+            borderwidth=0,
+            highlightthickness=0
+        )
+        self.records_box.grid(row=3, column=0, columnspan=2, padx=20, pady=10)
+
+        # Demo attendance records for prototype
+        demo_records = [
+            "Computer Science III - Present",
+            "Software Engineering - Late",
+            "Database Systems - Absent"
+        ]
+
+        for record in demo_records:
+            self.records_box.insert(tk.END, record)
+
+        tk.Label(
+            self.win,
+            text="Request Attendance Correction",
+            font=("JetBrains Mono", 14, "bold"),
+            bg="#000615",
+            fg="white"
+        ).grid(row=4, column=0, columnspan=2, pady=(15, 5))
+
+        tk.Label(
+            self.win,
+            text="Date",
+            font=("JetBrains Mono", 12),
+            bg="#000615",
+            fg="white"
+        ).grid(row=5, column=0, sticky="e", padx=15, pady=6)
+
+        self.date_var = tk.StringVar()
+        tk.Entry(
+            self.win,
+            textvariable=self.date_var,
+            width=28,
+            font=("JetBrains Mono", 12),
+            bg="#252830",
+            fg="white",
+            insertbackground="white",
+            relief="flat"
+        ).grid(row=5, column=1, padx=15, pady=6)
+
+        tk.Label(
+            self.win,
+            text="Reason",
+            font=("JetBrains Mono", 12),
+            bg="#000615",
+            fg="white"
+        ).grid(row=6, column=0, sticky="ne", padx=15, pady=6)
+
+        self.reason_box = tk.Text(
+            self.win,
+            width=28,
+            height=4,
+            font=("JetBrains Mono", 12),
+            bg="#252830",
+            fg="white",
+            insertbackground="white",
+            relief="flat"
+        )
+        self.reason_box.grid(row=6, column=1, padx=15, pady=6)
+
+        tk.Button(
+            self.win,
+            text="Submit Request",
+            width=20,
+            height=2,
+            bg="#252830",
+            fg="white",
+            font=("JetBrains Mono", 12),
+            relief="flat",
+            activebackground="#3a3d47",
+            command=self.submit_request
+        ).grid(row=7, column=0, columnspan=2, pady=(15, 25))
+
+        self.win.update_idletasks()
+        w = self.win.winfo_reqwidth()
+        h = self.win.winfo_reqheight()
+        self.win.geometry(f"{w}x{h}")
+
+    def submit_request(self):
+        date = self.date_var.get().strip()
+        reason = self.reason_box.get("1.0", tk.END).strip()
+
+        if not date or not reason:
+            messagebox.showwarning("Missing Information", "Please enter both date and reason.")
+            return
+
+        messagebox.showinfo(
+            "Request Submitted",
+            "Your attendance correction request has been submitted."
+        )
+
+        self.date_var.set("")
+        self.reason_box.delete("1.0", tk.END)
 
 
 
@@ -173,10 +331,11 @@ class AddStudentWindow:
         -faces_folder:      path to fcs/ directory — must match FRC's faces_folder
     """
  
-    def __init__(self, parent, webcam, controller, faces_folder: str = "fcs/"):
+    def __init__(self, parent, webcam, controller, faces_folder: str = "fcs/", on_student_account_created=None):
         self.parent = parent
         self.webcam = webcam
         self.controller = controller
+        self.on_student_account_created = on_student_account_created
         self.faces_folder = faces_folder
         self._captured_image = None   # PIL Image grabbed at window open time
  
@@ -218,14 +377,56 @@ class AddStudentWindow:
         
         self._lname_var = tk.StringVar()
         tk.Entry(self.win, textvariable = self._lname_var, width = 22, font = ("JetBrains Mono", 12), bg = "#252830", fg = "white", insertbackground = "white", relief = "flat").grid(row = 3, column = 1, **pad)
- 
-        
 
+        tk.Label(
+            self.win,
+            text="Student Email",
+            font=("JetBrains Mono", 12),
+            bg="#000615",
+            fg="white"
+        ).grid(row=4, column=0, sticky="e", **pad)
+
+        self._email_var = tk.StringVar()
+
+        tk.Entry(
+            self.win,
+            textvariable=self._email_var,
+            width=22,
+            font=("JetBrains Mono", 12),
+            bg="#252830",
+            fg="white",
+            insertbackground="white",
+            relief="flat"
+        ).grid(row=4, column=1, **pad)
+
+
+        tk.Label(
+            self.win,
+            text="Password",
+            font=("JetBrains Mono", 12),
+            bg="#000615",
+            fg="white"
+        ).grid(row=5, column=0, sticky="e", **pad)
+
+        self._password_var = tk.StringVar()
+
+        tk.Entry(
+            self.win,
+            textvariable=self._password_var,
+            show="*",
+            width=22,
+            font=("JetBrains Mono", 12),
+            bg="#252830",
+            fg="white",
+            insertbackground="white",
+            relief="flat"
+        ).grid(row=5, column=1, **pad)
+ 
         """
         Error display section
         """
         self._error_label = tk.Label(self.win, text = "", font = ("JetBrains Mono", 10), bg = "#000615", fg = "#ff4444")
-        self._error_label.grid(row = 4, column = 0, columnspan =2 )
+        self._error_label.grid(row = 6, column = 0, columnspan =2 )
 
 
  
@@ -233,7 +434,7 @@ class AddStudentWindow:
         #Action buttons secotion
         """
         btn_frame = tk.Frame(self.win, bg = "#000615")
-        btn_frame.grid(row = 5, column = 0, columnspan = 2, pady = (8, 20))
+        btn_frame.grid(row = 7, column = 0, columnspan = 2, pady = (8, 20))
  
         tk.Button(btn_frame, text = "Save Student", width = 16, height = 2, bg = "#252830", fg = "white", font = ("JetBrains Mono", 11), relief = "flat", activebackground = "#3a3d47",command = self._save).pack(side = "left", padx = 8)
         tk.Button(btn_frame, text = "Cancel", width = 12, height = 2, bg = "#252830", fg = "#888888", font = ("JetBrains Mono", 11), relief = "flat", activebackground = "#3a3d47", command = self.win.destroy).pack(side = "left", padx = 8)
@@ -304,9 +505,11 @@ class AddStudentWindow:
         """
         fname = self._fname_var.get().strip()
         lname = self._lname_var.get().strip()
- 
-        if not fname or not lname:
-            self._error_label.config(text="Both first and last name are required.")
+        email = self._email_var.get().strip().lower()
+        password = self._password_var.get().strip()
+
+        if not fname or not lname or not email or not password:
+            self._error_label.config(text="Name, email, and password are required.")
             return
  
         if self._captured_image is None:
@@ -328,6 +531,12 @@ class AddStudentWindow:
         # Convert from RGB (PIL default from webcam) to RGB PNG — no
         # channel swap needed since face_recognition also expects RGB.
         self._captured_image.save(dest_path, format="PNG")
+
+        with open("student_accounts.txt", "a", encoding="utf-8") as file:
+            file.write(f"{full_name}|{email}|{password}\n")
+
+        if self.on_student_account_created:
+            self.on_student_account_created(full_name, email, password)
  
         # Restart FRC so the new encoding is loaded into the worker process.
         self.controller.stop()
@@ -566,11 +775,14 @@ class GUI:
         self.button_captureStudent = tk.Button(window, text = "Add Student", width = 15, height = 2, bg = "#252830", fg = "white", font = ("JetBrains Mono", 13))
         self.button_viewClasses = tk.Button(window, text = "View Classes", width = 15, height = 2, bg = "#252830", fg = "white", font = ("JetBrains Mono", 13))
         self.button_manualAttendance = tk.Button(window, text="Manual Mark", width = 15, height = 2, bg = "#252830", fg = "white", font = ("JetBrains Mono", 13))
- 
+        self.button_logout = tk.Button(window, text="Logout", width=15, height=2, bg="#252830", fg="white", font=("JetBrains Mono", 13))
+
+
         self.button_export.place(relx = 0.8845, rely = 0.3, anchor = "center")
         self.button_captureStudent.place(relx = 0.8845, rely = 0.4, anchor = "center")
         self.button_viewClasses.place(relx = 0.8845, rely = 0.5, anchor = "center")
-        self.button_manualAttendance.place(relx=0.8845, rely=0.6, anchor="center")  # NEW
+        self.button_manualAttendance.place(relx=0.8845, rely=0.6, anchor="center")
+        self.button_logout.place(relx=0.8845, rely=0.7, anchor="center")  # NEW
  
  
  
