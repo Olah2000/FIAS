@@ -1,9 +1,4 @@
-"""
-Sebastian Olah
-Muhammad Usman
-Josh Rudnick
-"""
- 
+
  
 import cv2
 import os
@@ -20,8 +15,8 @@ import PIL.ImageFont
 """
 Constants here for seating GUI elements nicely
 """
-WINDOW_SCALE_FACTOR   = 1.3
-WEBCAM_SCALE_FACTOR   = 1.3
+WINDOW_SCALE_FACTOR   = 1.4
+WEBCAM_SCALE_FACTOR   = 1.2
 WEBCAM_FRAME_DELAY_MS = 14
  
 
@@ -161,7 +156,7 @@ class LoginWindow:
  
 class AddStudentWindow:
     """
-    Model window that captures the current webcam frame, shows it as a
+    Modal window that captures the current webcam frame, shows it as a
     preview, accepts a first/last name, and saves the image to fcs/ so that
     FRC will recognise the student on the next session start.
  
@@ -179,8 +174,6 @@ class AddStudentWindow:
         self.controller = controller
         self.faces_folder = faces_folder
         self._captured_image = None   # PIL Image grabbed at window open time
-        self._grab_frame()
-
  
 
         #Create Toplevel
@@ -197,7 +190,7 @@ class AddStudentWindow:
         can position the student before pressing Add.  A "Retake" button
         lets them refresh the snapshot if the first frame was bad.
         """
-
+        self._grab_frame()
  
         preview_w, preview_h = 320, 240
         self._canvas = tk.Canvas(self.win, width=preview_w, height=preview_h, bg="#252830", highlightthickness=0)
@@ -259,7 +252,7 @@ class AddStudentWindow:
         If the webcam returns nothing (camera not ready), _captured_image
         stays None and the canvas will show a placeholder message.
         """
-        self._captured_image = self.webcam.get_frame_image_blocking()
+        self._captured_image = self.webcam.get_frame_image()
 
 
  
@@ -909,30 +902,6 @@ class WebcamCapture:
         if rgbframe is None:
             return None
         return PIL.Image.fromarray(rgbframe)
-    
-
-
-    def get_frame_image_blocking(self, timeout: float = 0.5):
-        """
-        Blocking variant of get_frame_image for one shot captures (e.g. AddStudentWindow).
-        Waits up to `timeout` seconds for the capture thread to produce a frame
-        before giving up and returning None.  This avoids the race condition where
-        update_fs_loop has just drained the queue and the capture thread has not
-        yet deposited the next frame, which causes non-blocking get_nowait to
-        return None even though the camera is running fine.
-        """
-        try:
-            rgbframe = self.frame_queue.get(timeout=timeout)
-            return PIL.Image.fromarray(rgbframe)
-        except queue.Empty:
-            return None
-
-
-
-
-
-
-
     
  
  

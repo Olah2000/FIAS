@@ -1,8 +1,8 @@
 """
-Sebastian Olah
-Muhammad Usman
-Josh Rudnick
- 
+
+
+
+
 Application entry point
  
 Responsibilities:
@@ -167,8 +167,6 @@ if __name__ == "__main__":
         if FIAS.webcam is None:
             root.after(WEBCAM_FRAME_DELAY_MS, update_fs_loop)
             return
-        
-        
  
         pil_frame = FIAS.webcam.get_frame_image()
  

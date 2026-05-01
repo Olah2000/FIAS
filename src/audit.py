@@ -1,8 +1,4 @@
-"""
-Sebastian Olah
-Muhammad Usman
-Josh Rudnick
-"""
+
  
 import os
 from datetime import datetime
