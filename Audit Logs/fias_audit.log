@@ -1,0 +1,6 @@
+2026-04-30 22:23:23 | INFO  | SESSION          | Application started
+2026-04-30 22:23:31 | INFO  | LOGIN            | email='' outcome=SUCCESS
+2026-04-30 22:23:33 | INFO  | FACE_DETECTED    | name='Sebastian Olah' confidence=0.58 status=Present
+2026-04-30 22:58:59 | INFO  | SESSION          | Application started
+2026-04-30 22:59:06 | INFO  | LOGIN            | email='' outcome=SUCCESS
+2026-04-30 22:59:08 | INFO  | FACE_DETECTED    | name='Sebastian Olah' confidence=0.57 status=Present
