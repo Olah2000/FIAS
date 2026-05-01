@@ -1,9 +1,4 @@
-"""
-Sebastian Olah
-Muhammad Usman
-Josh Rudnick
-"""
- 
+
  
 import cv2
 import os

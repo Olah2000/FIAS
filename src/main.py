@@ -1,8 +1,8 @@
 """
-Sebastian Olah
-Muhammad Usman
-Josh Rudnick
- 
+
+
+
+
 Application entry point
  
 Responsibilities:
