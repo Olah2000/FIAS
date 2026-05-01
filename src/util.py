@@ -1,6 +1,8 @@
 
 """
-Simple method for printing version numbers of imported modules for sanity
+# Simple method for printing version numbers of imported modules for sanity
+# Input: type: module name
+# Output: type: string
 """
 
 def ver(module):

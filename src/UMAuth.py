@@ -1,4 +1,11 @@
-
+"""
+Sebastian Olah
+Muhammad Usman
+Josh Rudnick
+ 
+CSIII
+Mr. Ding
+"""
  
 
 import hashlib

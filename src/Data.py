@@ -1,4 +1,12 @@
-
+"""
+Sebastian Olah
+Muhammad Usman
+Josh Rudnick
+ 
+UML Diagram Assignment
+CSIII
+Mr. Ding
+"""
 
 
 
